@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="ebt-release" content="6.2-exercises-20261001">
+<meta name="ebt-release" content="6.3-saving-20261001">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EBT Avianca: planificador de módulos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -610,6 +610,12 @@ details.alerts[open] > summary .caret{transform:rotate(-135deg); margin-top:6px}
 @media (max-width:900px){ .topnav{margin:0 -12px; padding:0 12px} }
 @media (max-width:600px){ .band{grid-template-columns:repeat(2,1fr)} }
 
+.cloud-tools{display:flex!important;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px;padding:6px 8px;border-radius:9px;max-width:580px;white-space:normal!important}
+.cloud-tools #cloud-status{flex-basis:100%;text-align:right;font-size:12px;color:var(--ink2)}
+.cloud-tools.pending{background:#fff3cd;border:1px solid #d39a24}.cloud-tools.pending #cloud-status{color:#724d00;font-weight:700}.cloud-tools.offline{border-color:#b33}
+.cloud-tools button:disabled{opacity:.5;cursor:default}.cloud-history{max-width:760px;width:92%;max-height:85vh;border:1px solid #ccc;border-radius:16px;padding:24px;color:var(--ink);background:var(--surface)}
+.cloud-version{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--rule)}.cloud-preview{background:var(--surface2);padding:16px;margin:12px 0;border:1px solid var(--accent);border-radius:10px}.cloud-preview .btn{margin:4px}
+@media(max-width:700px){.cloud-tools{max-width:100%;width:100%;justify-content:flex-start}.cloud-tools #cloud-status{text-align:left}.cloud-version{align-items:flex-start;font-size:13px}.cloud-history{padding:16px}}
 </style>
 </head>
 <body>
@@ -745,7 +751,8 @@ function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify(persistUI()
 const CLOUD_URL = 'https://japjyiccjwnhbfpwqtti.supabase.co/rest/v1/';
 const CLOUD_KEY = 'sb_publishable_d0I6KVZFmyxg4EiyRExVNw_HoeDHPOs';
 const SYNC_KEY = 'ebt-shared-sync-v1';
-const cloud = { base: null, revision: 0, busy: false, ready: false, status: 'Conectando al registro compartido…', conflict: null, timer: null };
+const AUTO_SAVE_MS=30000, MAX_DIRTY_MS=120000;
+const cloud = { dirtySince:0, lastEdit:0, lastLocal:null, manualRequested:false, offline:false, savedAt:'', lastMode:'', base: null, revision: 0, busy: false, ready: false, status: 'Conectando al registro compartido…', conflict: null, timer: null };
 const cloneCloud = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v));
 function equalCloud(a,b) {
   if(a===b) return true;
@@ -766,7 +773,7 @@ function mergeCloud(base,local,remote,path=[],conflicts=[]) {
 function cloudPayload() { const p={}; SHARED_KEYS.forEach(k=>p[k]=cloneCloud(S[k]||{})); p._signatures=cloneCloud(LEGACY); return p; }
 function cloudClean(p) { const out={}; SHARED_KEYS.forEach(k=>out[k]=cloneCloud(p[k]||{})); out._signatures=cloneCloud(p._signatures||{}); return out; }
 function cloudCache() {
-  try { localStorage.setItem(SYNC_KEY,JSON.stringify({revision:cloud.revision,base:cloud.base,local:cloudPayload()})); localStorage.setItem(LS_KEY,JSON.stringify(persistShared())); localStorage.setItem(LS_SIG,JSON.stringify(LEGACY)); }
+  try { localStorage.setItem(SYNC_KEY,JSON.stringify({revision:cloud.revision,base:cloud.base,local:cloudPayload(),dirtySince:cloud.dirtySince,lastEdit:cloud.lastEdit})); localStorage.setItem(LS_KEY,JSON.stringify(persistShared())); localStorage.setItem(LS_SIG,JSON.stringify(LEGACY)); }
   catch(e) { cloud.status='No se pudo guardar copia local; mantén esta pestaña abierta'; renderStore(); }
 }
 function cloudApply(p) { SHARED_KEYS.forEach(k=>S[k]=cloneCloud(p[k]||{})); LEGACY=cloneCloud(p._signatures||{}); }
@@ -776,7 +783,36 @@ async function cloudRequest(path,body) {
   if(!res.ok) throw Error('HTTP '+res.status); return res.json();
 }
 function cloudEditing() { return !!document.querySelector('[data-custom-editor]') || !!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'); }
-function cloudQueue() { if(!cloud.ready) return; cloudCache(); cloudStatus('Cambios pendientes de guardar…'); clearTimeout(cloud.timer); cloud.timer=setTimeout(cloudTick,800); }
+function cloudDirty(){return cloud.ready&&!equalCloud(cloudPayload(),cloud.base);}
+function cloudDue(){return Math.min((cloud.lastEdit||Date.now())+AUTO_SAVE_MS,(cloud.dirtySince||Date.now())+MAX_DIRTY_MS);}
+function cloudQueue() {
+  if(!cloud.ready)return;
+  const p=cloudPayload();
+  if(!equalCloud(p,cloud.base)) {
+    if(!equalCloud(p,cloud.lastLocal)){cloud.lastEdit=Date.now();cloud.dirtySince ||= Date.now();cloud.lastLocal=cloneCloud(p);}
+    cloud.status='Cambios sin guardar';
+  }else{cloud.dirtySince=0;cloud.lastEdit=0;cloud.lastLocal=cloneCloud(p);cloud.status='Guardado en la nube · v'+cloud.revision;}
+  cloudCache();renderStore();
+  clearTimeout(cloud.timer);if(cloudDirty())cloud.timer=setTimeout(()=>cloudTick(),Math.max(0,cloudDue()-Date.now()));
+}
+async function cloudManual(){
+  if(CUSTOM_DRAFT){toast('Primero pulsa Guardar ejercicio en el formulario');return;}
+  document.activeElement?.blur?.();
+  if(!cloud.ready){await initStore();return;}
+  cloudQueue();if(!cloudDirty()){toast('Todos los cambios ya están guardados');return;}
+  cloud.manualRequested=true;await cloudTick();
+}
+function cloudUndo(){
+  if(cloud.busy||!cloudDirty())return;
+  if(!confirm('¿Descartar los cambios pendientes de este dispositivo y volver al último guardado recibido?'))return;
+  try{localStorage.setItem('ebt-discarded-'+Date.now(),JSON.stringify(cloudPayload()));}catch(e){alert('No se pudo respaldar el borrador; no se descartó.');return;}
+  cloudApply(cloud.base);cloud.lastLocal=cloneCloud(cloud.base);cloud.dirtySince=0;cloud.lastEdit=0;cloud.manualRequested=false;cloudCache();cloud.status='Guardado en la nube · v'+cloud.revision;render();cloudTick();
+}
+function cloudSaved(record){
+  cloud.base=cloudClean(record.payload);cloud.revision=record.revision;cloud.savedAt=record.updated_at;cloud.lastMode=record.payload._save?.kind||'';cloud.offline=false;
+  if(equalCloud(cloudPayload(),cloud.base)){cloud.dirtySince=0;cloud.lastEdit=0;cloud.lastLocal=cloneCloud(cloud.base);}
+}
+
 function cloudConflict(record,merged,paths) {
   cloud.conflict={record,merged}; cloudStatus('Hay cambios simultáneos: pulsa aquí para resolver');
   const panel=document.getElementById('ebt-cloud-panel'); if(panel) panel.remove();
@@ -797,21 +833,25 @@ function cloudConflict(record,merged,paths) {
 async function cloudTick() {
   if(cloud.busy||cloud.conflict) return;
   if(!cloud.ready) { await initStore(); return; }
+  if(cloudDirty()&&!cloud.lastEdit)cloudQueue();
+  if(cloudDirty()&&!cloud.manualRequested&&Date.now()<cloudDue()){renderStore();return;}
   cloud.busy=true;
   try {
     const local=cloudPayload();
     if(!equalCloud(local,cloud.base)) {
       cloudStatus('Guardando en la nube…');
-      const result=await cloudRequest('rpc/ebt_manager_save',{expected_revision:cloud.revision,new_payload:local});
-      if(result.ok) { cloud.base=cloudClean(result.record.payload);cloud.revision=result.record.revision;cloudCache();cloudStatus(equalCloud(cloudPayload(),cloud.base)?'Guardado en la nube · v'+cloud.revision:'Cambios pendientes de guardar…'); }
+      const kind=cloud.manualRequested?'manual':'auto';cloud.manualRequested=false;
+      const result=await cloudRequest('rpc/ebt_manager_save',{expected_revision:cloud.revision,new_payload:{...local,_save:{kind}}});
+      if(result.ok) { cloudSaved(result.record);cloudCache();cloudStatus(equalCloud(cloudPayload(),cloud.base)?'Guardado en la nube · v'+cloud.revision:'Cambios pendientes de guardar…'); }
       else {
+        if(kind==='manual')cloud.manualRequested=true;
         const remote=cloudClean(result.record.payload), conflicts=[];
         const merged=mergeCloud(cloud.base,cloudPayload(),remote,[],conflicts);
         if(conflicts.length) cloudConflict(result.record,merged,conflicts);
         else if(!cloudEditing()) { cloud.base=remote;cloud.revision=result.record.revision;cloudApply(merged);cloudCache();render();cloudStatus('Combinando cambios de otros dispositivos…'); }
       }
     } else if(!cloudEditing()) {
-      const rows=await cloudRequest('ebt_manager_state?id=eq.main&select=*'); const record=rows[0]; if(!record) throw Error('Registro no disponible');
+      const rows=await cloudRequest('ebt_manager_state?id=eq.main&select=*'); const record=rows[0]; if(!record) throw Error('Registro no disponible');cloud.offline=false;cloud.savedAt=record.updated_at;cloud.lastMode=record.payload._save?.kind||'';
       // User may have edited while the request was in flight.
       if(record.revision!==cloud.revision&&!cloudEditing()) {
         const remote=cloudClean(record.payload),conflicts=[];
@@ -821,8 +861,8 @@ async function cloudTick() {
       }
       if(!cloud.conflict) cloudStatus(equalCloud(cloudPayload(),cloud.base)?'Guardado en la nube · v'+cloud.revision:'Cambios pendientes de guardar…');
     }
-  } catch(e) { cloudStatus('Sin conexión al guardado · cambios pendientes en este dispositivo'); }
-  finally { cloud.busy=false; }
+  } catch(e) { cloud.offline=true;cloudStatus(cloudDirty()?'Sin conexión · cambios pendientes en este dispositivo':'Sin conexión · última copia recibida v'+cloud.revision); }
+  finally { cloud.busy=false;renderStore();if(cloud.manualRequested&&!cloud.offline)setTimeout(()=>cloudTick(),0); }
 }
 function save() { saveUI(); cloudQueue(); }
 function saveRoles() { /* No accounts in this shared workspace. */ }
@@ -834,45 +874,68 @@ async function initStore() {
   try {
     const rows=await cloudRequest('ebt_manager_state?id=eq.main&select=*');const record=rows[0];if(!record)throw Error('Registro ausente');
     let cache=null;try {cache=JSON.parse(localStorage.getItem(SYNC_KEY));}catch(e){}
-    if(cache?.base&&cache?.local) {cloud.base=cache.base;cloud.revision=cache.revision;cloudApply(cache.local);}
+    if(cache?.base&&cache?.local) {cloud.base=cache.base;cloud.revision=cache.revision;cloudApply(cache.local);cloud.lastLocal=cloneCloud(cache.local);cloud.dirtySince=cache.dirtySince||0;cloud.lastEdit=cache.lastEdit||0;}
     else {
       // Archive all old device data before replacing it with the uploaded shared backup.
       const archive={};[LS_KEY,LS_UI,LS_SIG].forEach(k=>{archive[k]=localStorage.getItem(k);});
       localStorage.setItem('ebt-before-cloud-'+Date.now(),JSON.stringify(archive));
       cloud.base=cloudClean(record.payload);cloud.revision=record.revision;cloudApply(cloud.base);
     }
-    cloud.ready=true;ME.canWrite=true;ME.admin=true;store.kind='db';cloudCache();render();cloudStatus('Registro compartido conectado');
+    cloud.savedAt=record.updated_at;cloud.lastMode=record.payload._save?.kind||'';cloud.ready=true;ME.canWrite=true;ME.admin=true;store.kind='db';cloudCache();render();cloudStatus('Registro compartido conectado');
   }catch(e){cloudStatus('No se pudo conectar · pulsa aquí para reintentar');}
   finally{cloud.busy=false;}
   if(cloud.ready)setTimeout(cloudTick,100);
 }
-async function cloudHistory() {
-  if(cloud.conflict) {cloudConflict(cloud.conflict.record,cloud.conflict.merged,['Conflicto pendiente']);return;}
+function cloudDownload(payload,name){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+function saveKind(x){return x?.kind==='manual'?'Guardado manual':x?.kind==='auto'?'Autoguardado':x?.kind==='restore'?'Restauración de v'+x.from:'Guardado anterior';}
+async function cloudHistory(){
+  if(cloud.conflict){cloudConflict(cloud.conflict.record,cloud.conflict.merged,['Conflicto pendiente']);return;}
   if(!cloud.ready){initStore();return;}
-  const d=document.createElement('dialog'); d.style='max-width:600px;width:90%;max-height:80vh;border:1px solid #ccc;border-radius:16px;padding:24px';
-  d.innerHTML='<h2>Guardado compartido</h2><p>Los cambios se guardan automáticamente. Las versiones anteriores permanecen disponibles.</p>';
-  const close=document.createElement('button');close.textContent='Cerrar';close.className='btn';close.onclick=()=>d.remove();d.append(close);
-  const backup=document.createElement('button');backup.textContent='Descargar respaldo actual';backup.className='btn';backup.onclick=()=>{const a=document.createElement('a');const u=URL.createObjectURL(new Blob([JSON.stringify(cloudPayload(),null,2)],{type:'application/json'}));a.href=u;a.download='EBT-respaldo-compartido.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};d.append(backup);
-  for(const key of Object.keys(localStorage).filter(k=>k.startsWith('ebt-before-cloud-'))) {
-    const b=document.createElement('button');b.className='btn';b.textContent='Descargar respaldo anterior de este dispositivo';b.onclick=()=>{const a=document.createElement('a');const u=URL.createObjectURL(new Blob([localStorage.getItem(key)],{type:'application/json'}));a.href=u;a.download=key+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};d.append(b);
+  const d=document.createElement('dialog');d.className='cloud-history';
+  d.innerHTML='<h2>Historial y recuperación</h2><p>Guardar ahora confirma tus cambios. El autoguardado se activa tras 30 segundos sin editar (máximo 2 minutos de edición continua).</p><p class="hint">Se conservan las últimas 100 versiones, la última de cada día de los últimos 30 días y los guardados manuales de ese periodo. Restaurar cambia el registro para todos y conserva la versión actual en el historial.</p>';
+  const action=(label,fn,parent=d)=>{const b=document.createElement('button');b.className='btn sm';b.textContent=label;b.onclick=fn;parent.append(b);return b;};
+  const controls=document.createElement('div');controls.className='row';controls.style.gap='8px';d.append(controls);
+  action('Cerrar',()=>d.remove(),controls);action('Guardar ahora',cloudManual,controls);action('Descargar respaldo actual',()=>cloudDownload(cloudPayload(),'EBT-respaldo-compartido.json'),controls);
+  const current=document.createElement('p');current.textContent='Última versión recibida: v'+cloud.revision+(cloud.savedAt?' · '+new Date(cloud.savedAt).toLocaleString():'');d.append(current);
+  const drafts=Object.keys(localStorage).filter(k=>k.startsWith('ebt-before-cloud-')||k.startsWith('ebt-discarded-'));
+  if(drafts.length){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Respaldos locales de este dispositivo';details.append(summary);for(const key of drafts)action(key.startsWith('ebt-discarded-')?'Descargar borrador descartado':'Descargar respaldo anterior',()=>cloudDownload(JSON.parse(localStorage.getItem(key)),key+'.json'),details);d.append(details);}
+  const preview=document.createElement('section');preview.className='cloud-preview';preview.hidden=true;d.append(preview);
+  const list=document.createElement('div');d.append(list);let cursor=null;
+  async function inspect(row){
+    preview.hidden=false;preview.textContent='Cargando versión…';
+    try{const data=await cloudRequest('ebt_manager_history?revision=eq.'+row.revision+'&select=payload');if(!data[0])throw Error('No disponible');const payload=data[0].payload;
+      preview.textContent='';const heading=document.createElement('h3');heading.textContent='Versión '+row.revision+' · '+saveKind(row.save);preview.append(heading);
+      const fields={data:'Planificador y ejercicios',target:'Competencias target',targetSug:'Sugerencias',rsmv:'RSMV',memory:'Memory items',company:'Temas de compañía',systop:'Sistemas',sysitems:'Ítems de sistemas',uprt:'UPRT',malf:'Fallas',pf:'PF',aocs:'Operadores',userEls:'Elementos propios',perf2:'Indicadores',_signatures:'Firmas',grading:'Calificaciones',kpi:'KPI',fda:'FDA',icap:'ICAP',validation:'Validación',links:'Enlaces',seeded:'Configuración de módulos'};
+      const old=cloudClean(payload),now=cloudPayload(),changed=Object.keys(old).filter(k=>!equalCloud(old[k],now[k]));
+      const p=document.createElement('p');p.textContent=changed.length?'Diferencias respecto a tu registro actual: '+changed.map(k=>fields[k]||k).join(', ')+'.':'Esta versión contiene los mismos datos que tu registro actual.';preview.append(p);
+      action('Descargar esta versión',()=>cloudDownload(payload,'EBT-version-'+row.revision+'.json'),preview);
+      action('Restaurar esta versión para todos',async()=>{
+        if(cloud.busy||cloudDirty()||CUSTOM_DRAFT){alert('Guarda o deshaz tus cambios pendientes antes de restaurar.');return;}
+        if(!confirm('¿Restaurar la versión '+row.revision+' para todos los dispositivos? El estado actual quedará en el historial.'))return;
+        cloud.busy=true;renderStore();
+        try{const result=await cloudRequest('rpc/ebt_manager_save',{expected_revision:cloud.revision,new_payload:{...old,_save:{kind:'restore',from:row.revision}}});
+          if(!result.ok){alert('Otra persona guardó cambios. Cierra el historial y revisa el registro actualizado antes de restaurar.');return;}
+          cloudApply(old);cloudSaved(result.record);cloudCache();cloud.status='Versión recuperada · v'+cloud.revision;render();d.remove();toast('Versión '+row.revision+' recuperada. Puedes revertirla desde el historial.');
+        }catch(e){alert('No se pudo confirmar la restauración. Revisa la conexión y el historial.');}finally{cloud.busy=false;renderStore();}
+      },preview);
+      preview.scrollIntoView({block:'nearest'});
+    }catch(e){preview.textContent='No se pudo cargar esta versión. Reintenta con conexión.';}
   }
-  document.body.append(d);d.showModal();
-  try { const rows=await cloudRequest('ebt_manager_history?select=revision,updated_at&order=revision.desc&limit=30');
-    for(const row of rows){const b=document.createElement('button');b.className='btn';b.style='display:block;margin-top:8px';b.textContent='Restaurar v'+row.revision+' · '+new Date(row.updated_at).toLocaleString();b.onclick=async()=>{
-      if(!confirm('¿Restaurar esta versión para todos? La versión actual quedará en el historial.'))return;
-      if(cloud.busy||!equalCloud(cloudPayload(),cloud.base)){alert('Espera a que tus cambios terminen de guardarse.');return;}
-      cloud.busy=true;try{const data=await cloudRequest('ebt_manager_history?revision=eq.'+row.revision+'&select=payload');const result=await cloudRequest('rpc/ebt_manager_save',{expected_revision:cloud.revision,new_payload:data[0].payload});
-        if(!result.ok){alert('El registro cambió. Actualiza y vuelve a revisar la versión.');return;}
-        cloud.base=cloudClean(result.record.payload);cloud.revision=result.record.revision;cloudApply(cloud.base);cloudCache();render();cloudStatus('Guardado en la nube · v'+cloud.revision);d.remove();
-      }catch(e){alert('No se pudo restaurar. El registro actual permanece guardado.');}finally{cloud.busy=false;}
-    };d.append(b);}
-  }catch(e){const p=document.createElement('p');p.textContent='No se pudo cargar el historial. Reintenta con conexión.';d.append(p);}
+  const more=action('Cargar versiones anteriores',loadMore);async function loadMore(){more.disabled=true;try{
+    const rows=await cloudRequest('ebt_manager_history?select=revision,updated_at,save:payload->_save&order=revision.desc&limit=50'+(cursor?'&revision=lt.'+cursor:''));
+    for(const row of rows){const item=document.createElement('div');item.className='cloud-version';const text=document.createElement('span');text.textContent='v'+row.revision+' · '+new Date(row.updated_at).toLocaleString()+' · '+saveKind(row.save);item.append(text);action('Revisar',()=>inspect(row),item);list.append(item);cursor=row.revision;}
+    if(rows.length<50)more.hidden=true;if(!list.children.length)list.textContent='Todavía no hay versiones anteriores.';
+  }catch(e){more.textContent='Reintentar carga del historial';}finally{more.disabled=false;}}
+  document.body.append(d);d.showModal();await loadMore();
 }
 setInterval(()=>{if(!document.hidden)cloudTick();},5000);
-window.addEventListener('online',cloudTick);
-window.addEventListener('focus',cloudTick);
-window.addEventListener('beforeunload',e=>{if(cloud.ready&&!equalCloud(cloudPayload(),cloud.base)){cloudCache();e.preventDefault();e.returnValue='';}});
-document.addEventListener('click',e=>{if(e.target.closest('#store'))cloudHistory();});
+setInterval(()=>{if(cloud.ready&&cloudDirty()){renderStore();if(Date.now()>=cloudDue())cloudTick();}},1000);
+window.addEventListener('online',()=>cloudTick());
+window.addEventListener('focus',()=>cloudTick());
+window.addEventListener('beforeunload',e=>{if(cloudDirty()||CUSTOM_DRAFT){if(cloud.ready)cloudCache();e.preventDefault();e.returnValue='';}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&cloudDirty()){cloudCache();}else if(!document.hidden)cloudTick();});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-cloud-action]');if(!a)return;if(a.dataset.cloudAction==='save')cloudManual();else if(a.dataset.cloudAction==='undo')cloudUndo();else cloudHistory();});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();cloudManual();}});
 
 
 /* ===== Semillas: registro M1 y plan M2 desde la matriz EBT All Modules, matrices del periodo anterior ===== */
@@ -1044,8 +1107,16 @@ function render(top = false) {
   if (S.view === 'home' || S.view === 'charts') animateGauge();
   window.scrollTo(0, top ? 0 : winY);
 }
-function storeText() { return cloud.status + ' · Historial'; }
-function renderStore() { const s = document.getElementById('store'); if (s) { s.className = 'store ' + store.kind; s.innerHTML = '<i><\/i>' + storeText(); } }
+function storeText(){
+  if(cloud.conflict)return 'Conflicto de cambios · abre Historial';
+  if(cloud.offline)return cloud.status;
+  if(cloud.busy&&cloudDirty())return 'Guardando en la nube…';
+  if(cloudDirty())return '⚠ Cambios sin guardar · automático en '+Math.max(0,Math.ceil((cloudDue()-Date.now())/1000))+' s';
+  return cloud.status+(cloud.savedAt?' · '+new Date(cloud.savedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'');
+}
+function storeMarkup(){return `<span id="cloud-status" role="status" aria-live="polite">${esc(storeText())}</span><button class="btn sm primary" data-cloud-action="save" ${!cloud.ready||cloud.busy||!cloudDirty()?'disabled':''}>Guardar ahora</button><button class="btn sm" data-cloud-action="undo" ${!cloudDirty()||cloud.busy?'disabled':''}>Deshacer</button><button class="btn sm" data-cloud-action="history">Historial</button>`;}
+function renderStore(){const el=document.getElementById('store');if(!el)return;el.className='store cloud-tools '+(cloudDirty()?'pending':'')+(cloud.offline?' offline':'');const status=el.querySelector('#cloud-status');if(!status){el.innerHTML=storeMarkup();return;}const text=storeText();if(status.textContent!==text)status.textContent=text;const save=el.querySelector('[data-cloud-action="save"]'),undo=el.querySelector('[data-cloud-action="undo"]');if(save)save.disabled=!cloud.ready||cloud.busy||!cloudDirty();if(undo)undo.disabled=!cloudDirty()||cloud.busy;}
+
 function modButton(x) {
   const els = elementsForFleet();
   const dots = ['A', 'B', 'C'].map(c => {
@@ -1070,7 +1141,7 @@ function renderInner() {
       <div class="seg aocseg" role="group" aria-label="Operadores AOC" title="Operadores (AOC) incluidos en el programa">${AOCS.map(c => `<button data-act="aoc" data-v="${c}" aria-pressed="${aocOn(c)}" title="${aocOn(c) ? 'Quitar' : 'Incluir'} ${c}">${c}<\/button>`).join('')}<\/div>
       <div class="timeline" role="group" aria-label="Módulo del ciclo">${[1, 2, 3].map(y => `
         <div class="year"><small>Año ${y}<\/small><div>${MODULES.filter(x => yearOf(x.m) === y).map(x => modButton(x)).join('')}<\/div><\/div>`).join('')}<\/div>
-      <div class="store ${store.kind}" id="store" role="button" tabindex="0" title="Ver historial y respaldos" style="cursor:pointer"><i><\/i>${storeText()}<\/div>
+      <div class="store cloud-tools ${cloudDirty()?'pending':''}" id="store">${storeMarkup()}<\/div>
     <\/div>
     ${topNav()}
     ${inPlan ? `<nav class="tabs" role="tablist">
