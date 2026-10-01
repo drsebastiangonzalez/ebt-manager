@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="ebt-release" content="6.3-saving-20261001">
+<meta name="ebt-release" content="6.4-board-20261001">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EBT Avianca: planificador de módulos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -616,6 +616,32 @@ details.alerts[open] > summary .caret{transform:rotate(-135deg); margin-top:6px}
 .cloud-tools button:disabled{opacity:.5;cursor:default}.cloud-history{max-width:760px;width:92%;max-height:85vh;border:1px solid #ccc;border-radius:16px;padding:24px;color:var(--ink);background:var(--surface)}
 .cloud-version{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--rule)}.cloud-preview{background:var(--surface2);padding:16px;margin:12px 0;border:1px solid var(--accent);border-radius:10px}.cloud-preview .btn{margin:4px}
 @media(max-width:700px){.cloud-tools{max-width:100%;width:100%;justify-content:flex-start}.cloud-tools #cloud-status{text-align:left}.cloud-version{align-items:flex-start;font-size:13px}.cloud-history{padding:16px}}
+/* Compact header: save controls share the navigation row. */
+.nav-save-row{display:flex;align-items:center;border-top:1px solid var(--rule2);margin:0 -20px;padding:0 14px;gap:8px}
+.nav-save-row .topnav{flex:1;min-width:0;margin:0;padding:0;border:0}
+#store.cloud-tools{flex:0 0 auto;display:flex!important;flex-wrap:nowrap;max-width:none;width:auto;gap:5px;padding:3px 0;margin:0;border-radius:7px}
+#store.cloud-tools #cloud-status{flex:0 1 auto;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;font-size:11px}
+#store.cloud-tools .btn{padding:4px 7px;min-height:28px;font-size:11px;white-space:nowrap}
+#store.cloud-tools.pending{padding:2px 5px}
+.strip-row{padding:4px 0;gap:10px}.strip-row .timeline{margin-left:auto}
+@media(max-width:900px){.nav-save-row{flex-wrap:wrap;gap:0}.nav-save-row .topnav{flex-basis:100%}#store.cloud-tools{margin-left:auto;padding-bottom:4px}.strip-row{gap:6px}.strip{padding-left:12px;padding-right:12px}.nav-save-row{margin-left:-12px;margin-right:-12px;padding:0 8px}}
+.bdov{position:fixed;inset:0;z-index:58;overflow:auto;padding:12px;background:rgba(3,10,20,.55);overscroll-behavior:contain}
+.bd{max-width:1540px;min-height:calc(100vh - 24px);margin:auto;background:var(--canvas);padding:16px;border-radius:14px;box-shadow:var(--shadow)}
+.bdtop{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.bdtop h2{margin:0;font-size:21px}.bdtop small{font-size:13px;color:var(--ink3);font-weight:500}.bdtop p{margin:5px 0 0;font-size:12px;color:var(--ink2)}
+.bdactions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.bdactions [data-board-status]{flex-basis:100%;font-size:12px;color:var(--ink2)}
+.bdgrid{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(310px,1fr) minmax(310px,1fr);gap:12px;align-items:start}
+.bpool,.bday{padding:12px;background:var(--surface);border:1px solid var(--rule);border-radius:12px}.bpool{position:sticky;top:0;max-height:calc(100vh - 30px);overflow:auto}.bpool input[type=search]{width:100%;margin-bottom:10px}.bpool-list{display:grid;gap:8px}.bdh{display:flex;justify-content:space-between;align-items:center;gap:8px}.bdh h3{margin:0;font-size:17px}
+.bbox{padding:9px;margin:10px 0;border:1px solid var(--rule);background:var(--surface2);border-radius:10px}.bbox.fixed{background:var(--warn-soft)}
+.bbh{display:flex;gap:5px;flex-wrap:wrap;align-items:center}.bbh .btitle{flex:1;min-width:120px;max-width:100%;font-size:12px;padding:6px}.bbh .btime{width:58px;min-width:58px;padding:6px 2px;text-align:center;font-size:12px}.bnote{width:100%;margin:7px 0 0;font-size:12px;padding:6px}.bdrop{display:grid;gap:7px;min-height:66px;padding-top:8px}.bempty{font-size:12px;color:var(--ink3);text-align:center;padding:10px 0}
+.bcard{padding:9px;background:var(--surface);border:1px solid var(--rule);border-radius:9px;cursor:grab}.bcard.dragging{opacity:.4}.bch{display:flex;align-items:center;gap:5px}.bch b{font-size:12px;flex:1}.bhandle{touch-action:none;cursor:grab;font-size:23px;line-height:24px;min-width:30px;min-height:32px;color:var(--ink3);user-select:none;-webkit-user-select:none}.bcard p{margin:5px 0;font-size:12px;line-height:1.4;overflow-wrap:anywhere}.bcf{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:6px}.bcf select{font-size:11px;max-width:120px;padding:4px}.bmini{font-size:11px;padding:4px 7px;border:1px solid var(--rule);border-radius:6px;background:var(--surface);min-height:28px}.bmini.danger{color:var(--due)}.bcard small{display:block;margin-top:6px;font-size:11px;color:var(--ink3)}
+.bover{outline:3px solid var(--accent);outline-offset:1px;background:var(--accent-soft)}
+.bmove{position:fixed;inset:0;z-index:79;display:grid;place-items:center;background:rgba(3,10,20,.55);padding:18px}.bmove>div{width:min(600px,100%);max-height:85vh;overflow:auto;background:var(--surface);padding:22px;border-radius:12px}.btargets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px}
+#board-drag-ghost{position:fixed;z-index:100;pointer-events:none;background:var(--ink);color:var(--surface);padding:8px 12px;border-radius:8px;font-size:12px}
+.evov{z-index:80}.board-open{overflow:hidden}.board-open .cloud-history{z-index:90}
+@media(max-width:1100px){.bdgrid{grid-template-columns:1fr 1fr}.bpool{grid-column:1/-1;position:static;max-height:290px}.bpool-list{grid-template-columns:repeat(2,minmax(0,1fr))}.bd{padding:12px}}
+@media(max-width:700px){.bdgrid{grid-template-columns:1fr}.bpool-list{grid-template-columns:1fr}.bdov{padding:5px}.bdtop{gap:10px}.bdactions .btn{font-size:11px}.bdtop small{display:block}}
+@media print{body.board-open{overflow:visible}body.board-open #app>.strip,body.board-open #app>.main,body.board-open .dock,body.board-open .bdactions,body.board-open .bpool,body.board-open .bhandle,body.board-open .bmini,body.board-open .bday>select{display:none!important}body.board-open .bdov{position:static;overflow:visible;padding:0;background:white}body.board-open .bd{padding:0;box-shadow:none;background:white}body.board-open .bdgrid{grid-template-columns:1fr 1fr}.bcard,.bbox{break-inside:avoid}.bcard{cursor:default}}
+
 </style>
 </head>
 <body>
@@ -782,7 +808,7 @@ async function cloudRequest(path,body) {
   const res=await fetch(CLOUD_URL+path,{method:body?'POST':'GET',headers:{apikey:CLOUD_KEY,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:AbortSignal.timeout(15000)});
   if(!res.ok) throw Error('HTTP '+res.status); return res.json();
 }
-function cloudEditing() { return !!document.querySelector('[data-custom-editor]') || !!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'); }
+function cloudEditing() { return !!BOARD_DRAG || !!BOARD_POINTER || !!BOARD_CHOICE || !!document.querySelector('[data-custom-editor]') || !!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'); }
 function cloudDirty(){return cloud.ready&&!equalCloud(cloudPayload(),cloud.base);}
 function cloudDue(){return Math.min((cloud.lastEdit||Date.now())+AUTO_SAVE_MS,(cloud.dirtySince||Date.now())+MAX_DIRTY_MS);}
 function cloudQueue() {
@@ -1098,8 +1124,11 @@ const OPEN = {};
 app.addEventListener('toggle', ev => { const d = ev.target; if (d.tagName === 'DETAILS' && d.dataset.key) { OPEN[d.dataset.key] = d.open; if (d.dataset.key === 'alerts') ALERTS_OPEN = d.open; } }, true);
 function render(top = false) {
   syncUserEls();
+  const boardY=app.querySelector('.bdov')?.scrollTop||0, poolY=app.querySelector('.bpool')?.scrollTop||0;
   const lb = app.querySelector('.list-body'); const lbTop = lb ? lb.scrollTop : 0; const winY = window.scrollY;
   renderInner();
+  if(BOARD_OPEN){app.insertAdjacentHTML('beforeend',boardOverlay());app.querySelector('.bdov').scrollTop=boardY;app.querySelector('.bpool').scrollTop=poolY;}
+  document.body.classList.toggle('board-open',BOARD_OPEN);
   const strip = app.querySelector('.strip'); if (strip) document.documentElement.style.setProperty('--strip-h', strip.offsetHeight + 'px');
   document.body.classList.toggle('ro', !ME.canWrite);
   const lb2 = app.querySelector('.list-body'); if (lb2) lb2.scrollTop = lbTop;
@@ -1111,11 +1140,11 @@ function storeText(){
   if(cloud.conflict)return 'Conflicto de cambios · abre Historial';
   if(cloud.offline)return cloud.status;
   if(cloud.busy&&cloudDirty())return 'Guardando en la nube…';
-  if(cloudDirty())return '⚠ Cambios sin guardar · automático en '+Math.max(0,Math.ceil((cloudDue()-Date.now())/1000))+' s';
-  return cloud.status+(cloud.savedAt?' · '+new Date(cloud.savedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'');
+  if(cloudDirty())return '⚠ Pendiente · '+Math.max(0,Math.ceil((cloudDue()-Date.now())/1000))+' s';
+  return cloud.ready?'Guardado · v'+cloud.revision:cloud.status;
 }
-function storeMarkup(){return `<span id="cloud-status" role="status" aria-live="polite">${esc(storeText())}</span><button class="btn sm primary" data-cloud-action="save" ${!cloud.ready||cloud.busy||!cloudDirty()?'disabled':''}>Guardar ahora</button><button class="btn sm" data-cloud-action="undo" ${!cloudDirty()||cloud.busy?'disabled':''}>Deshacer</button><button class="btn sm" data-cloud-action="history">Historial</button>`;}
-function renderStore(){const el=document.getElementById('store');if(!el)return;el.className='store cloud-tools '+(cloudDirty()?'pending':'')+(cloud.offline?' offline':'');const status=el.querySelector('#cloud-status');if(!status){el.innerHTML=storeMarkup();return;}const text=storeText();if(status.textContent!==text)status.textContent=text;const save=el.querySelector('[data-cloud-action="save"]'),undo=el.querySelector('[data-cloud-action="undo"]');if(save)save.disabled=!cloud.ready||cloud.busy||!cloudDirty();if(undo)undo.disabled=!cloudDirty()||cloud.busy;}
+function storeMarkup(){return `<span id="cloud-status" role="status" aria-live="polite">${esc(storeText())}</span><button class="btn sm primary" data-cloud-action="save" ${!cloud.ready||cloud.busy||!cloudDirty()?'disabled':''}>Guardar</button><button class="btn sm" title="Deshacer cambios pendientes" aria-label="Deshacer" data-cloud-action="undo" ${!cloudDirty()||cloud.busy?'disabled':''}>↶</button><button class="btn sm" data-cloud-action="history">Historial</button>`;}
+function renderStore(){document.querySelectorAll('[data-board-status]').forEach(n=>n.textContent=storeText());const el=document.getElementById('store');if(!el)return;el.className='store cloud-tools '+(cloudDirty()?'pending':'')+(cloud.offline?' offline':'');const status=el.querySelector('#cloud-status');if(!status){el.innerHTML=storeMarkup();return;}const text=storeText();if(status.textContent!==text)status.textContent=text;status.title=cloud.savedAt?'Último guardado: '+new Date(cloud.savedAt).toLocaleString():cloud.status;const save=el.querySelector('[data-cloud-action="save"]'),undo=el.querySelector('[data-cloud-action="undo"]');if(save)save.disabled=!cloud.ready||cloud.busy||!cloudDirty();if(undo)undo.disabled=!cloudDirty()||cloud.busy;}
 
 function modButton(x) {
   const els = elementsForFleet();
@@ -1141,12 +1170,12 @@ function renderInner() {
       <div class="seg aocseg" role="group" aria-label="Operadores AOC" title="Operadores (AOC) incluidos en el programa">${AOCS.map(c => `<button data-act="aoc" data-v="${c}" aria-pressed="${aocOn(c)}" title="${aocOn(c) ? 'Quitar' : 'Incluir'} ${c}">${c}<\/button>`).join('')}<\/div>
       <div class="timeline" role="group" aria-label="Módulo del ciclo">${[1, 2, 3].map(y => `
         <div class="year"><small>Año ${y}<\/small><div>${MODULES.filter(x => yearOf(x.m) === y).map(x => modButton(x)).join('')}<\/div><\/div>`).join('')}<\/div>
-      <div class="store cloud-tools ${cloudDirty()?'pending':''}" id="store">${storeMarkup()}<\/div>
     <\/div>
-    ${topNav()}
+    <div class="nav-save-row">${topNav()}<div class="store cloud-tools ${cloudDirty()?'pending':''}" id="store">${storeMarkup()}</div></div>
     ${inPlan ? `<nav class="tabs" role="tablist">
       <button role="tab" data-act="view" data-v="plan" aria-selected="${S.view === 'plan'}">Módulo ${S.module}${dueCount ? `<span class="n" title="Elementos pendientes">${dueCount}<\/span>` : ''}<\/button>
       <button role="tab" data-act="view" data-v="comp" aria-selected="${S.view === 'comp'}">Buscar por competencia<\/button>
+      <button role="tab" data-act="bdOpen" aria-selected="false">Tablero de sesiones</button>
       <button role="tab" data-act="view" data-v="record" aria-selected="${S.view === 'record'}">Registro del ciclo<\/button>
       <button role="tab" data-act="view" data-v="summary" aria-selected="${S.view === 'summary'}">Resumen del módulo${inMod ? `<span class="n">${inMod}<\/span>` : ''}<\/button>
     <\/nav>` : ''}
@@ -1237,7 +1266,7 @@ function sessionsCard() {
     (en.custom||[]).forEach(c=>{const x=customRecord(c);add(x.sessions,{elId,text:x.text,crew:x.crew,comp:x.comp});});
   });
   const used=SESSIONS_ALL.filter(v=>rows[v]);
-  return `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h2>Sesiones de M${S.module}<small>${S.fleet}: EVAL, SBT, MTV, MV, MT, UPRT, LPC e ISI</small></h2>${un?`<span class="pill warn">${un} ejercicios sin sesión</span>`:''}</div>${used.length?`<div class="sesst">${used.map(v=>`<div class="sess"><h4>${v} · ${rows[v].length} ejercicios</h4><ul>${rows[v].map(r=>`<li><b>${esc(EL[r.elId]?.name||r.elId)}:</b> ${esc(r.text)} <span class="tag">${esc(r.crew||'Tripulante sin asignar')}</span> ${r.comp.map(c=>`<span class="comp">${esc(c)}</span>`).join('')}</li>`).join('')}</ul></div>`).join('')}</div>`:'<div class="empty">Todavía no hay ejercicios asignados a sesiones. Usa los botones de sesión de los ejercicios JET o edita un ejercicio propio.</div>'}</div>`;
+  return `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><button class="btn sm primary" data-act="bdOpen">Tablero: arrastrar y soltar</button><h2>Sesiones de M${S.module}<small>${S.fleet}: EVAL, SBT, MTV, MV, MT, UPRT, LPC e ISI</small></h2>${un?`<span class="pill warn">${un} ejercicios sin sesión</span>`:''}</div>${used.length?`<div class="sesst">${used.map(v=>`<div class="sess"><h4>${v} · ${rows[v].length} ejercicios</h4><ul>${rows[v].map(r=>`<li><b>${esc(EL[r.elId]?.name||r.elId)}:</b> ${esc(r.text)} <span class="tag">${esc(r.crew||'Tripulante sin asignar')}</span> ${r.comp.map(c=>`<span class="comp">${esc(c)}</span>`).join('')}</li>`).join('')}</ul></div>`).join('')}</div>`:'<div class="empty">Todavía no hay ejercicios asignados a sesiones. Usa los botones de sesión de los ejercicios JET o edita un ejercicio propio.</div>'}</div>`;
 }
 
 VIEWS.plan = function renderPlan() {
@@ -3038,7 +3067,7 @@ app.addEventListener('input', ev => {
 document.addEventListener('keydown', ev => {
   const tag = (ev.target && ev.target.tagName) || ''; const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (ev.target && ev.target.isContentEditable);
   if (ev.key === 'Escape' && HELP_STEP >= 0) { HELP_STEP = -1; render(); return; }
-  if (typing) return;
+  if (typing || BOARD_OPEN) return;
   if (ev.key === 'ArrowRight' && S.module < 6) { S.module++; save(); render(); toast('M' + S.module); }
   else if (ev.key === 'ArrowLeft' && S.module > 1) { S.module--; save(); render(); toast('M' + S.module); }
   else if (ev.key === '/') { ev.preventDefault(); S.view = 'search'; render(true); const n = app.querySelector('#gq'); if (n) n.focus(); }
@@ -3091,6 +3120,75 @@ setTimeout(() => { ME.canWrite=false; loadLocal(); try { if (!localStorage.getIt
   setInterval(checkVersion, 300000);
   checkVersion();
 })();
+
+</script>
+<script>
+/* Session board adapted from the supplied PDF. Layout is stored inside data so older clients preserve it. */
+let BOARD_OPEN=false,BOARD_DRAG=null,BOARD_POINTER=null,BOARD_QUERY='',BOARD_CHOICE=null;
+const BOARD_FIXED={BRAKE:'Brake',REINF:'Reinforcement',RSMV:'RSMV'};
+function boardDefault(){return {
+ day1:[['EVAL 1','EVAL','02:20'],['EVAL 2','EVAL 2',''],['BRAKE','Brake','00:15'],['SBT 1','SBT 1 / ISI / HPS','01:05'],['ISI 1','ISI',''],['MV 1','REINF / RSMV','']].map(([id,title,time])=>({id,title,time,note:''})),
+ day2:[['MTV 1','MTV','00:15'],['SBT 3','SBT 3 / UPRT / LPC','01:15'],['UPRT 1','UPRT',''],['LPC 1','LPC CM2 / SBT 2 parte 1','01:00'],['SBT 2','SBT 2',''],['BRAKE','Brake','00:15'],['LPC 2','LPC CM2 parte 2','01:00']].map(([id,title,time])=>({id,title,time,note:''}))
+};}
+function boardCfg(){return S.data._sessionBoard?.[S.fleet]?.[S.module]||boardDefault();}
+function boardStore(cfg){S.data._sessionBoard ||= {};S.data._sessionBoard[S.fleet] ||= {};S.data._sessionBoard[S.fleet][S.module]=cfg;save();}
+function boardHash(text){let h=0;for(const c of text)h=(h*31+c.charCodeAt(0))|0;return (h>>>0).toString(36);}
+function boardCustomKey(c,i){const x=customRecord(c);return x.id?'id:'+x.id:'legacy:'+i+':'+boardHash(x.text);}
+function boardCards(){const fd=S.data[S.fleet]?.[S.module]||{},cards=[];
+ for(const [elId,en]of Object.entries(fd)){
+  for(const id of en.ex||[])cards.push({kind:'jet',elId,key:id,text:EX[id]?.gm||id,comp:EX[id]?.comp||[],crew:en.crew?.[id]||'',sessions:evArr(en,id)});
+  (en.custom||[]).forEach((c,i)=>{const x=customRecord(c);cards.push({kind:'custom',elId,key:boardCustomKey(c,i),text:x.text,comp:x.comp,crew:x.crew,sessions:x.sessions});});
+ }return cards;
+}
+function boardRef(card,from=''){return {kind:card.kind,elId:card.elId,key:String(card.key),from,fleet:S.fleet,module:S.module};}
+function boardLocate(ref){if(ref.fleet!==S.fleet||ref.module!==S.module)return null;const en=entry(ref.elId,ref.module,ref.fleet);if(!en)return null;if(ref.kind==='jet')return en.ex.includes(ref.key)?{en,index:-1}:null;const index=en.custom.findIndex((c,i)=>boardCustomKey(c,i)===ref.key);return index<0?null:{en,index};}
+function boardAssign(ref,to){if(!ME.canWrite)return false;if(to!=='__pool__'&&!SESSIONS_ALL.includes(to))return false;const found=boardLocate(ref);if(!found){toast('El ejercicio cambió. Vuelve a seleccionarlo.');return false;}
+ const {en,index}=found,old=ref.kind==='jet'?evArr(en,ref.key):customRecord(en.custom[index]).sessions;
+ let next=old.filter(v=>v!==ref.from);if(to==='__pool__'){if(!ref.from)next=[];}else if(!next.includes(to))next.push(to);
+ if(equalCloud(old,next))return true;
+ if(ref.kind==='jet'){en.ev ||= {};en.ev[ref.key]=next;}else en.custom[index]={...customRecord(en.custom[index]),sessions:next};
+ save();render();toast(to==='__pool__'?'Asignación retirada':'Ejercicio movido a '+to);return true;
+}
+function boardSetCrew(ref,value){const found=boardLocate(ref);if(!ME.canWrite||!found||!['',...CREW_OPTIONS].includes(value))return;const {en,index}=found;if(ref.kind==='jet'){en.crew ||= {};en.crew[ref.key]=value;}else en.custom[index]={...customRecord(en.custom[index]),crew:value};save();render();}
+function boardMinutes(t){if(!t?.trim())return 0;const m=/^(\d{1,2}):([0-5]\d)$/.exec(t.trim());return m?+m[1]*60+(+m[2]):null;}
+function boardFmt(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
+function boardPf(day){const out={CM1TO:0,CM1LDG:0,CM2TO:0,CM2LDG:0};D.pf.filter(p=>p.day===day).forEach(p=>{const x=S.pf[S.fleet]?.[S.module]?.[p.id]||{};for(const c of ['CM1','CM2'])for(const v of x[c]||[])if(Object.hasOwn(out,c+v))out[c+v]++;});return out;}
+function boardAttrs(c,from){return `data-bkind="${c.kind}" data-bel="${esc(c.elId)}" data-bkey="${esc(String(c.key))}" data-bfrom="${esc(from)}"`;}
+function boardCard(c,from=''){return `<article class="bcard" draggable="${ME.canWrite}" ${boardAttrs(c,from)}><div class="bch"><button class="bhandle" type="button" title="Arrastrar ejercicio" aria-label="Arrastrar ejercicio" ${boardAttrs(c,from)}>⠿</button><b>${esc(EL[c.elId]?.name||c.elId)}</b>${c.sessions.length>1?`<span class="tag" title="${esc(c.sessions.join(', '))}">${c.sessions.length} sesiones</span>`:''}</div><p>${esc(c.text)}</p><div class="bcf">${c.comp.map(k=>`<span class="comp" title="${esc(COMP_NAME[k]||k)}">${esc(k)}</span>`).join('')}</div><div class="bcf"><select data-act="bdCrew" ${boardAttrs(c,from)} aria-label="Tripulante del ejercicio"><option value="">Tripulante…</option>${CREW_OPTIONS.map(v=>`<option ${c.crew===v?'selected':''}>${v}</option>`).join('')}</select><button class="bmini" data-act="bdMove" ${boardAttrs(c,from)}>Mover</button><button class="bmini" data-act="bdSessions" ${boardAttrs(c,from)}>Sesiones</button>${from?`<button class="bmini danger" data-act="bdRemove" ${boardAttrs(c,from)} title="Quitar solo de ${esc(from)}" aria-label="Quitar de ${esc(from)}">×</button>`:''}</div>${!from&&c.sessions.length?`<small>Asignado a ${esc(c.sessions.join(', '))}; sin bloque visible.</small>`:''}</article>`;}
+function boardBox(b,day,i,cards){const fixed=!!BOARD_FIXED[b.id],list=fixed?[]:cards.filter(c=>c.sessions.includes(b.id));return `<section class="bbox ${fixed?'fixed':''}" ${fixed?'':`data-bdrop="${esc(b.id)}"`}><div class="bbh"><span class="tag">${esc(b.id)}</span><input data-act="bdTitle" data-day="${day}" data-i="${i}" value="${esc(b.title)}" aria-label="Título de ${esc(b.id)}" class="btitle"><input data-act="bdTime" data-day="${day}" data-i="${i}" value="${esc(b.time)}" placeholder="hh:mm" maxlength="5" aria-label="Duración de ${esc(b.id)}" class="btime"><button class="bmini" data-act="bdUp" data-day="${day}" data-i="${i}" title="Subir bloque" aria-label="Subir bloque" ${i===0?'disabled':''}>↑</button><button class="bmini" data-act="bdDown" data-day="${day}" data-i="${i}" title="Bajar bloque" aria-label="Bajar bloque">↓</button><button class="bmini danger" data-act="bdDel" data-day="${day}" data-i="${i}" title="Quitar bloque" aria-label="Quitar bloque">×</button></div><input data-act="bdNote" data-day="${day}" data-i="${i}" value="${esc(b.note)}" placeholder="Escenario, aeropuerto o foco del bloque" aria-label="Nota de ${esc(b.id)}" class="bnote">${fixed?'<p class="hint">Bloque de tiempo, sin ejercicios.</p>':`<div class="bdrop">${list.map(c=>boardCard(c,b.id)).join('')||'<p class="bempty">Suelta aquí un ejercicio</p>'}</div><small>${list.length} ejercicios</small>`}</section>`;}
+function boardOverlay(){if(!BOARD_OPEN)return '';const cfg=boardCfg(),cards=boardCards(),visible=new Set([...cfg.day1,...cfg.day2].map(b=>b.id));const pool=cards.filter(c=>!c.sessions.some(v=>visible.has(v)));const q=BOARD_QUERY.toLocaleLowerCase();const shown=pool.filter(c=>(c.text+' '+(EL[c.elId]?.name||'')).toLocaleLowerCase().includes(q));
+ const day=(key,label,pfDay)=>{const total=cfg[key].reduce((sum,b)=>sum+(boardMinutes(b.time)||0),0),pf=boardPf(pfDay);return `<div class="bday"><div class="bdh"><h3>${label}</h3><b data-board-total="${key}">${boardFmt(total)}</b></div><p class="hint">PF registrado: CM1 ${pf.CM1TO} TO / ${pf.CM1LDG} LDG · CM2 ${pf.CM2TO} TO / ${pf.CM2LDG} LDG</p>${cfg[key].map((b,i)=>boardBox(b,key,i,cards)).join('')}<select data-act="bdAdd" data-day="${key}" aria-label="Agregar bloque a ${label}"><option value="">Agregar bloque…</option>${Object.entries(BOARD_FIXED).map(([id,title])=>`<option value="${id}">${title} · tiempo</option>`).join('')}${SESSION_GROUPS.map(g=>`<optgroup label="${g.name}">${g.items.map(v=>`<option ${visible.has(v)?'disabled':''}>${v}</option>`).join('')}</optgroup>`).join('')}</select></div>`;};
+ return `<div class="bdov" role="dialog" aria-modal="true" aria-label="Tablero de sesiones"><div class="bd"><header class="bdtop"><div><h2>Tablero de sesiones <small>${S.fleet} · ${modFull(S.module)}</small></h2><p>Arrastra desde ⠿ o usa <b>Mover</b>. Usa <b>Sesiones</b> para combinar varias. Mover no cambia el tripulante.</p></div><div class="bdactions"><span data-board-status role="status">${esc(storeText())}</span><button class="btn sm primary" data-cloud-action="save">Guardar</button><button class="btn sm" data-cloud-action="history">Historial</button><button class="btn sm" data-act="bdReset">Restablecer bloques</button><button class="btn sm" data-act="bdPrint">Imprimir</button><button class="btn sm" data-act="bdClose">Cerrar tablero</button></div></header><div class="bdgrid"><aside class="bpool" data-bdrop="__pool__"><div class="bdh"><h3>Sin sesión / sin bloque</h3><span class="tag">${pool.length}</span></div><input type="search" data-act="bdQuery" value="${esc(BOARD_QUERY)}" placeholder="Buscar ejercicio" aria-label="Buscar ejercicio en el tablero"><div class="bpool-list">${shown.map(c=>boardCard(c)).join('')||'<p class="bempty">No hay ejercicios pendientes que coincidan.</p>'}</div></aside>${day('day1','Día 1','Day 1')}${day('day2','Día 2','Day 2')}</div></div>${boardMoveDialog()}</div>`;
+}
+function boardMoveDialog(){if(!BOARD_CHOICE)return '';const cfg=boardCfg();return `<div class="bmove" role="dialog" aria-modal="true" aria-label="Mover ejercicio"><div><h3>Mover ejercicio</h3><p>Elige el destino. Las demás sesiones asignadas se conservan.</p>${['day1','day2'].map((day,i)=>`<h4>Día ${i+1}</h4><div class="btargets">${cfg[day].filter(b=>!BOARD_FIXED[b.id]).map(b=>`<button class="btn sm" data-act="bdDestination" data-to="${esc(b.id)}">${esc(b.id)} · ${esc(b.title)}</button>`).join('')}</div>`).join('')}<button class="btn sm" data-act="bdDestination" data-to="__pool__">Quitar de esta sesión</button><button class="btn sm" data-act="bdCancelMove">Cancelar</button></div></div>`;}
+function boardDomRef(el){return {kind:el.dataset.bkind,elId:el.dataset.bel,key:el.dataset.bkey,from:el.dataset.bfrom||'',fleet:S.fleet,module:S.module};}
+function boardAdd(day,id){if(!ME.canWrite||!['day1','day2'].includes(day)||!(BOARD_FIXED[id]||SESSIONS_ALL.includes(id)))return false;const cfg=cloneCloud(boardCfg());if(!BOARD_FIXED[id]&&[...cfg.day1,...cfg.day2].some(b=>b.id===id)){toast('Esta sesión ya tiene un bloque');return false;}cfg[day].push({id,title:BOARD_FIXED[id]||id,time:id==='BRAKE'?'00:15':'',note:''});boardStore(cfg);render();return true;}
+function boardEdit(t){if(!ME.canWrite)return;const cfg=cloneCloud(boardCfg()),b=cfg[t.dataset.day]?.[+t.dataset.i];if(!b)return;const key={bdTitle:'title',bdTime:'time',bdNote:'note'}[t.dataset.act];if(!key)return;if(key==='time'&&boardMinutes(t.value)===null){t.setCustomValidity('Usa hh:mm, por ejemplo 01:15');t.reportValidity();return;}t.setCustomValidity('');b[key]=t.value.trim();boardStore(cfg);const out=document.querySelector(`[data-board-total="${t.dataset.day}"]`);if(out)out.textContent=boardFmt(cfg[t.dataset.day].reduce((n,x)=>n+(boardMinutes(x.time)||0),0));}
+function boardCleanDrag(){BOARD_DRAG=null;BOARD_POINTER=null;document.querySelectorAll('.bcard.dragging,.bover').forEach(el=>el.classList.remove('dragging','bover'));document.getElementById('board-drag-ghost')?.remove();}
+document.addEventListener('click',ev=>{const b=ev.target.closest('[data-act]');if(!b?.dataset.act.startsWith('bd'))return;const act=b.dataset.act;if(['SELECT','INPUT','TEXTAREA'].includes(b.tagName))return;ev.stopPropagation();
+ if(act==='bdOpen'){BOARD_OPEN=true;render();return;}if(act==='bdClose'){BOARD_OPEN=false;BOARD_CHOICE=null;boardCleanDrag();render();return;}if(act==='bdPrint'){window.print();return;}if(act==='bdCancelMove'){BOARD_CHOICE=null;render();return;}if(!ME.canWrite){toast('Espera a que se conecte el registro compartido');return;}
+ if(act==='bdMove'){BOARD_CHOICE=boardDomRef(b);render();return;}
+ if(act==='bdDestination'){const ref=BOARD_CHOICE;BOARD_CHOICE=null;if(ref)boardAssign(ref,b.dataset.to);return;}
+ if(act==='bdRemove'){boardAssign(boardDomRef(b),'__pool__');return;}
+ if(act==='bdSessions'){const ref=boardDomRef(b),found=boardLocate(ref);if(!found)return;if(ref.kind==='jet'){EVPICK={el:ref.elId,id:ref.key};render();}else{S.sel=ref.elId;openCustom(found.index);}return;}
+ if(act==='bdReset'){if(confirm('¿Restablecer los títulos, tiempos y orden de los bloques? Los ejercicios y sus sesiones se conservan.')){boardStore(boardDefault());render();}return;}
+ const cfg=cloneCloud(boardCfg()),list=cfg[b.dataset.day],i=+b.dataset.i;if(!list||!list[i])return;
+ if(act==='bdDel'){if(!confirm('¿Quitar este bloque? Sus ejercicios conservan la asignación y aparecerán en «Sin sesión / sin bloque».'))return;list.splice(i,1);}
+ else if(act==='bdUp'||act==='bdDown'){const j=i+(act==='bdUp'?-1:1);if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];}else return;boardStore(cfg);render();
+},true);
+document.addEventListener('change',ev=>{const t=ev.target,act=t.dataset?.act;if(!act?.startsWith('bd'))return;if(act==='bdAdd')boardAdd(t.dataset.day,t.value);else if(act==='bdCrew')boardSetCrew(boardDomRef(t),t.value);else if(['bdTitle','bdTime','bdNote'].includes(act))boardEdit(t);},true);
+document.addEventListener('input',ev=>{const t=ev.target;if(t.dataset?.act==='bdQuery'){BOARD_QUERY=t.value;const position=t.selectionStart;render();const n=document.querySelector('[data-act="bdQuery"]');n?.focus();try{n?.setSelectionRange(position,position);}catch{}}else if(['bdTitle','bdNote'].includes(t.dataset?.act))boardEdit(t);},true);
+document.addEventListener('dragstart',ev=>{const card=ev.target.closest?.('.bcard');if(!card||!ME.canWrite)return;if(ev.target.closest('select,input')||BOARD_POINTER){ev.preventDefault();return;}BOARD_DRAG=boardDomRef(card);card.classList.add('dragging');ev.dataTransfer.setData('text/plain','ebt-exercise');ev.dataTransfer.effectAllowed='move';});
+document.addEventListener('dragover',ev=>{const zone=ev.target.closest?.('[data-bdrop]');if(!zone||!BOARD_DRAG)return;ev.preventDefault();zone.classList.add('bover');});
+document.addEventListener('dragleave',ev=>{const zone=ev.target.closest?.('[data-bdrop]');if(zone&&!zone.contains(ev.relatedTarget))zone.classList.remove('bover');});
+document.addEventListener('drop',ev=>{const zone=ev.target.closest?.('[data-bdrop]');if(!zone||!BOARD_DRAG)return;ev.preventDefault();const ref=BOARD_DRAG;boardCleanDrag();if(zone.dataset.bdrop!==ref.from)boardAssign(ref,zone.dataset.bdrop);});
+document.addEventListener('dragend',boardCleanDrag);
+// Pointer drag on the handle also works with touch/Pencil; scrolling elsewhere remains native.
+document.addEventListener('pointerdown',ev=>{const handle=ev.target.closest?.('.bhandle');if(!handle||!ME.canWrite||ev.pointerType==='mouse')return;ev.preventDefault();handle.setPointerCapture(ev.pointerId);BOARD_POINTER={id:ev.pointerId,x:ev.clientX,y:ev.clientY,ref:boardDomRef(handle),active:false};});
+document.addEventListener('pointermove',ev=>{const p=BOARD_POINTER;if(!p||p.id!==ev.pointerId)return;if(!p.active&&Math.hypot(ev.clientX-p.x,ev.clientY-p.y)<8)return;ev.preventDefault();p.active=true;BOARD_DRAG=p.ref;let ghost=document.getElementById('board-drag-ghost');if(!ghost){ghost=document.createElement('div');ghost.id='board-drag-ghost';ghost.textContent='Mover ejercicio';document.body.append(ghost);}ghost.style.left=ev.clientX+12+'px';ghost.style.top=ev.clientY+12+'px';document.querySelectorAll('.bover').forEach(z=>z.classList.remove('bover'));const zone=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('[data-bdrop]');zone?.classList.add('bover');const overlay=document.querySelector('.bdov');if(overlay){if(ev.clientY>innerHeight-70)overlay.scrollTop+=22;else if(ev.clientY<70)overlay.scrollTop-=22;}}, {passive:false});
+document.addEventListener('pointerup',ev=>{const p=BOARD_POINTER;if(!p||p.id!==ev.pointerId)return;const zone=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('[data-bdrop]');const active=p.active;boardCleanDrag();if(active&&zone&&zone.dataset.bdrop!==p.ref.from)boardAssign(p.ref,zone.dataset.bdrop);});
+document.addEventListener('pointercancel',boardCleanDrag);
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&BOARD_OPEN&&!EVPICK&&!CUSTOM_DRAFT){ev.stopImmediatePropagation();if(BOARD_CHOICE)BOARD_CHOICE=null;else BOARD_OPEN=false;boardCleanDrag();render();}},true);
 
 </script>
 </body>
