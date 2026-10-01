@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="ebt-release" content="6.1.1-sync-20261001">
+<meta name="ebt-release" content="6.2-exercises-20261001">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EBT Avianca: planificador de módulos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -775,7 +775,7 @@ async function cloudRequest(path,body) {
   const res=await fetch(CLOUD_URL+path,{method:body?'POST':'GET',headers:{apikey:CLOUD_KEY,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:AbortSignal.timeout(15000)});
   if(!res.ok) throw Error('HTTP '+res.status); return res.json();
 }
-function cloudEditing() { return !!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'); }
+function cloudEditing() { return !!document.querySelector('[data-custom-editor]') || !!document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'); }
 function cloudQueue() { if(!cloud.ready) return; cloudCache(); cloudStatus('Cambios pendientes de guardar…'); clearTimeout(cloud.timer); cloud.timer=setTimeout(cloudTick,800); }
 function cloudConflict(record,merged,paths) {
   cloud.conflict={record,merged}; cloudStatus('Hay cambios simultáneos: pulsa aquí para resolver');
@@ -1098,10 +1098,52 @@ const SESSION_GROUPS = [
   { name: 'MTV', items: ['MTV 1', 'MTV 2', 'MTV 3', 'MTV 4'] },
   { name: 'MV', items: ['MV 1', 'MV 2', 'MV 3', 'MV 4'] },
   { name: 'MT', items: ['MT 1', 'MT 2', 'MT 3', 'MT 4'] },
-  { name: 'UPRT', items: ['UPRT 1', 'UPRT 2', 'UPRT 3', 'UPRT 4'] }
+  { name: 'UPRT', items: ['UPRT 1', 'UPRT 2', 'UPRT 3', 'UPRT 4'] },
+  { name: 'LPC', items: ['LPC 1', 'LPC 2', 'LPC 3', 'LPC 4'] },
+  { name: 'ISI', items: ['ISI 1', 'ISI 2', 'ISI 3', 'ISI 4'] }
 ];
 const SESSIONS_ALL = SESSION_GROUPS.flatMap(g => g.items);
 let EVPICK = null;
+
+const CREW_OPTIONS = ['CM1', 'CM2', 'CM1+CM2'];
+let CUSTOM_DRAFT = null;
+function customRecord(c) { return typeof c === 'string' ? {text:c,comp:[],crew:'',sessions:[]} : {text:'',comp:[],crew:'',sessions:[],...c}; }
+function customLabel(c) { const x=customRecord(c); return [x.text, x.comp.length ? 'Competencias: '+x.comp.join(', ') : '', x.crew, x.sessions.join(' + ')].filter(Boolean).join(' · '); }
+function jetAssignment(en,id) {return [...evArr(en,id),en?.crew?.[id]||''].filter(Boolean).join(' · ');}
+function crewPicker(value,act) { return `<div class="evg"><b>Tripulante</b><div role="group" aria-label="Tripulante">${CREW_OPTIONS.map(c=>`<button type="button" class="chip" data-act="${act}" data-v="${c}" aria-pressed="${value===c}">${c}</button>`).join('')}<button type="button" class="chip" data-act="${act}" data-v="" aria-pressed="${!value}">Sin asignar</button></div></div>`; }
+function customEditor() {
+  if(!CUSTOM_DRAFT)return '';
+  const d=CUSTOM_DRAFT;
+  return `<div class="evov"><div class="evbox" data-act="noop" data-custom-editor role="dialog" aria-modal="true" aria-label="Ejercicio propio">
+  <h3>${d.index===null?'Agregar':'Editar'} ejercicio propio · M${d.module}</h3>
+  <label for="customText">Descripción del ejercicio</label><textarea id="customText" data-act="customText" class="note" style="width:100%;min-height:75px;margin-top:8px">${esc(d.text)}</textarea>
+  <div class="evg"><b>Competencias · puedes elegir varias</b><div>${COMP.map(c=>`<button type="button" class="chip" data-act="customComp" data-v="${c}" title="${esc(COMP_NAME[c])}" aria-pressed="${d.comp.includes(c)}">${c}</button>`).join('')}</div></div>
+  ${crewPicker(d.crew,'customCrew')}
+  <h4 style="margin-bottom:4px">Sesiones · puedes combinar varias</h4>
+  ${SESSION_GROUPS.map(g=>`<div class="evg"><b>${g.name}</b><div>${g.items.map(v=>`<button type="button" class="chip" data-act="customSession" data-v="${v}" aria-pressed="${d.sessions.includes(v)}">${v}</button>`).join('')}</div></div>`).join('')}
+  <div class="row" style="justify-content:flex-end;gap:8px;margin-top:16px;position:sticky;bottom:-18px;background:var(--surface);padding:12px 0"><button class="btn" data-act="customCancel">Cancelar</button><button class="btn primary" data-act="customSave">Guardar ejercicio</button></div>
+  </div></div>`;
+}
+function openCustom(index=null) {
+  const c=index===null?{text:document.getElementById('customIn')?.value||''}:customRecord(entry(S.sel)?.custom[index]);
+  CUSTOM_DRAFT={...cloneCloud(customRecord(c)),index,el:S.sel,fleet:S.fleet,module:S.module};render();document.getElementById('customText')?.focus();
+}
+function handleCustomAction(act,v) {
+  if(!CUSTOM_DRAFT)return;
+  const d=CUSTOM_DRAFT;
+  const text=document.getElementById('customText');if(text)d.text=text.value;
+  if(act==='customCancel'){CUSTOM_DRAFT=null;render();return;}
+  if(act==='customComp'||act==='customSession'){const list=act==='customComp'?d.comp:d.sessions;const i=list.indexOf(v);if(i<0)list.push(v);else list.splice(i,1);render();return;}
+  if(act==='customCrew'){d.crew=v;render();return;}
+  if(act==='customSave'){
+    if(!d.text.trim()){toast('Escribe la descripción del ejercicio');document.getElementById('customText')?.focus();return;}
+    const en=entry(d.el,d.module,d.fleet,true);
+    const record={id:d.id||crypto.randomUUID(),text:d.text.trim(),comp:[...d.comp],crew:d.crew,sessions:[...d.sessions]};
+    if(d.index===null)en.custom.push(record);else en.custom[d.index]=record;
+    CUSTOM_DRAFT=null;save();render();toast('Ejercicio guardado');
+  }
+}
+
 function evArr(en, id) { const v = en && en.ev && en.ev[id]; return Array.isArray(v) ? v : v ? [v] : []; }
 function evPicker() {
   if (!EVPICK) return '';
@@ -1111,18 +1153,22 @@ function evPicker() {
     <h3>¿Dónde va este ejercicio en M${S.module}?<\/h3>
     <p class="hint" style="margin:0 0 4px">${esc(ex.gm)}<\/p>
     <p class="hint" style="margin:0">Marca una o varias sesiones; puedes combinar (por ejemplo EVAL 1 + UPRT 2). La asignación queda en el registro compartido.<\/p>
+    ${crewPicker(en.crew?.[EVPICK.id]||'', 'evcrew')}
     ${SESSION_GROUPS.map(g => `<div class="evg"><b>${g.name}<\/b><div>${g.items.map(s => `<button class="chip" data-act="evtog" data-v="${s}" aria-pressed="${cur.includes(s)}">${s}<\/button>`).join('')}<\/div><\/div>`).join('')}
     <div class="row" style="justify-content:flex-end;margin-top:14px;gap:8px"><button class="btn sm" data-act="evclear">Sin sesión<\/button><button class="btn sm primary" data-act="evdone">Listo<\/button><\/div>
   <\/div><\/div>`;
 }
 function sessionsCard() {
-  const fd = (S.data[S.fleet] || {})[S.module] || {}; const rows = {}; let un = 0;
-  Object.entries(fd).forEach(([elId, en]) => (en.ex || []).forEach(id => { const a = evArr(en, id); if (!a.length) { un++; return; } a.forEach(s => (rows[s] ||= []).push({ elId, id })); }));
-  const used = SESSIONS_ALL.filter(s => rows[s]);
-  return `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h2>Sesiones de M${S.module}<small>${S.fleet}: ejercicios por EVAL, SBT, MTV, MV, MT y UPRT<\/small><\/h2>${un ? `<span class="pill warn">${un} ejercicio${un > 1 ? 's' : ''} sin sesión<\/span>` : ''}<\/div>
-  ${used.length ? `<div class="sesst">${used.map(s => `<div class="sess"><h4>${s} <small style="color:var(--ink3);font-weight:400">· ${rows[s].length} ejercicio${rows[s].length > 1 ? 's' : ''}<\/small><\/h4><ul>${rows[s].map(r => `<li><b>${esc(EL[r.elId] ? EL[r.elId].name : r.elId)}:<\/b> ${esc(EX[r.id] ? EX[r.id].gm : r.id)}<\/li>`).join('')}<\/ul><\/div>`).join('')}<\/div>` : '<div class="empty">Todavía no hay ejercicios asignados a sesiones. Al marcar un ejercicio la app pregunta dónde va; también puedes pulsar su etiqueta dorada para asignarlo o combinarlo.<\/div>'}
-  ${un && used.length ? '<p class="hint">Los ejercicios sin sesión muestran la etiqueta "+ sesión" en su training element.<\/p>' : ''}<\/div>`;
+  const fd=(S.data[S.fleet]||{})[S.module]||{}, rows={};let un=0;
+  const add=(sessions,row)=>{if(!sessions.length){un++;return;}sessions.forEach(v=>(rows[v] ||= []).push(row));};
+  Object.entries(fd).forEach(([elId,en])=>{
+    (en.ex||[]).forEach(id=>add(evArr(en,id),{elId,text:EX[id]?.gm||id,crew:en.crew?.[id]||'',comp:EX[id]?.comp||[]}));
+    (en.custom||[]).forEach(c=>{const x=customRecord(c);add(x.sessions,{elId,text:x.text,crew:x.crew,comp:x.comp});});
+  });
+  const used=SESSIONS_ALL.filter(v=>rows[v]);
+  return `<div class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h2>Sesiones de M${S.module}<small>${S.fleet}: EVAL, SBT, MTV, MV, MT, UPRT, LPC e ISI</small></h2>${un?`<span class="pill warn">${un} ejercicios sin sesión</span>`:''}</div>${used.length?`<div class="sesst">${used.map(v=>`<div class="sess"><h4>${v} · ${rows[v].length} ejercicios</h4><ul>${rows[v].map(r=>`<li><b>${esc(EL[r.elId]?.name||r.elId)}:</b> ${esc(r.text)} <span class="tag">${esc(r.crew||'Tripulante sin asignar')}</span> ${r.comp.map(c=>`<span class="comp">${esc(c)}</span>`).join('')}</li>`).join('')}</ul></div>`).join('')}</div>`:'<div class="empty">Todavía no hay ejercicios asignados a sesiones. Usa los botones de sesión de los ejercicios JET o edita un ejercicio propio.</div>'}</div>`;
 }
+
 VIEWS.plan = function renderPlan() {
   const els = elementsForFleet();
   if (!S.sel || !EL[S.sel] || !EL[S.sel].fleets.includes(S.fleet)) S.sel = els[0].id;
@@ -1155,7 +1201,7 @@ VIEWS.plan = function renderPlan() {
     <section class="pane detail" aria-label="Detalle del training element">${renderDetail(EL[S.sel])}<\/section>
   <\/div>
   ${sessionsCard()}
-  ${evPicker()}`;
+  ${evPicker()}${customEditor()}`;
 }
 function renderFilters(extra = '') {
   const f = S.filters;
@@ -1177,7 +1223,7 @@ function exRow(e, en, elId, showTopic = false) {
   return `<label class="ex ${on ? 'on' : ''}">
     <input type="checkbox" data-act="ex" data-v="${e.id}" data-el="${elId}" ${on ? 'checked' : ''}>
     <span><span class="gm">${esc(e.gm)}<\/span>
-      <span class="row2">${on ? `<button type="button" class="tag evtag" data-act="evopen" data-v="${e.id}" data-el="${elId}" onclick="event.preventDefault()" title="Elegir en qué sesión va (EVAL, SBT, MTV, MV, MT, UPRT); admite combinaciones" style="color:var(--accent);border-color:var(--accent);font-weight:800">${evs.length ? evs.join(' + ') : '+ sesión'}<\/button>` : ''}${showTopic ? `<span class="tag">${esc(TOPIC[e.topic].name)}<\/span>` : ''}<span class="tag">${PH_LABEL[e.ph] || e.ph}<\/span>${e.phases.map(p => `<span class="phase">${p}<\/span>`).join('')}${e.comp.map(c => `<span class="comp ${f.comp.includes(c) ? 'hit' : ''}" title="${COMP_NAME[c]}">${c}<\/span>`).join('')}${linksForItem(e.id).map(l => `<span class="link ${l.kind}" title="${l.kind === 'rsmv' ? 'Maniobra RSMV' : 'Memory item'}">${l.kind === 'rsmv' ? 'RSMV' : 'MI'}: ${esc(l.name)}<\/span>`).join('')}<\/span>
+      <span class="row2">${on ? `<button type="button" class="tag evtag" data-act="evopen" data-v="${e.id}" data-el="${elId}" onclick="event.preventDefault()" title="Elegir en qué sesión va (EVAL, SBT, MTV, MV, MT, UPRT, LPC, ISI); admite combinaciones" style="color:var(--accent);border-color:var(--accent);font-weight:800">${evs.length ? evs.join(' + ') : '+ sesión'}</button><button type="button" class="tag evtag" data-act="evopen" data-v="${e.id}" data-el="${elId}" onclick="event.preventDefault()" title="Asignar CM1, CM2 o ambos">${esc(en.crew?.[e.id]||'+ tripulante')}<\/button>` : ''}${showTopic ? `<span class="tag">${esc(TOPIC[e.topic].name)}<\/span>` : ''}<span class="tag">${PH_LABEL[e.ph] || e.ph}<\/span>${e.phases.map(p => `<span class="phase">${p}<\/span>`).join('')}${e.comp.map(c => `<span class="comp ${f.comp.includes(c) ? 'hit' : ''}" title="${COMP_NAME[c]}">${c}<\/span>`).join('')}${linksForItem(e.id).map(l => `<span class="link ${l.kind}" title="${l.kind === 'rsmv' ? 'Maniobra RSMV' : 'Memory item'}">${l.kind === 'rsmv' ? 'RSMV' : 'MI'}: ${esc(l.name)}<\/span>`).join('')}<\/span>
     <\/span><\/label>`;
 }
 function renderDetail(el) {
@@ -1209,9 +1255,7 @@ function renderDetail(el) {
           ${list.map(f => { const on = en && en.fcts.includes(f.id); const lk = linksForItem(f.id); return `<label class="fr ${on ? 'on' : ''}"><input type="checkbox" data-act="fc" data-v="${f.id}" ${on ? 'checked' : ''}><span>${esc(f.mal)}${lk.map(l => ` <span class="link ${l.kind}">${l.kind === 'rsmv' ? 'RSMV' : 'MI'}: ${esc(l.name)}<\/span>`).join('')}<\/span><span class="crit">${f.crit.length ? f.crit.join(' ') : ''}<\/span><\/label>`; }).join('')}
         <\/details>`; }).join('') || '<div class="empty" style="margin:0;border:0">Ninguna falla coincide con la búsqueda.<\/div>'}<\/div><\/div>`;
   })() : '';
-  const custom = en && en.custom.length ? `<ul class="custom-list">${en.custom.map((c, i) => EDIT_ITEM && EDIT_ITEM.kind === 'custom' && EDIT_ITEM.i === i
-    ? `<li><input type="text" id="edCustom" value="${esc(c)}" style="flex:1"><button class="btn sm primary" data-act="saveCustom" data-v="${i}">Guardar<\/button><button class="btn sm" data-act="cancelEdit">Cancelar<\/button><\/li>`
-    : `<li><span>${esc(c)}<\/span><button class="btn sm" data-act="editCustom" data-v="${i}">Editar<\/button><button class="btn sm danger" data-act="rmCustom" data-v="${i}">Quitar<\/button><\/li>`).join('')}<\/ul>` : '';
+  const custom = en && en.custom.length ? `<ul class="custom-list">${en.custom.map((c,i)=>{const x=customRecord(c);return `<li><span><span style="display:block">${esc(x.text)}</span><span class="row2">${x.comp.map(k=>`<span class="comp" title="${esc(COMP_NAME[k]||k)}">${esc(k)}</span>`).join('')}<span class="tag">${esc(x.crew||'Tripulante sin asignar')}</span>${x.sessions.map(v=>`<span class="tag">${esc(v)}</span>`).join('')}</span></span><button class="btn sm" data-act="editCustom" data-v="${i}">Editar</button><button class="btn sm danger" data-act="rmCustom" data-v="${i}">Quitar</button></li>`;}).join('')}</ul>` : '';
   return `
     <button class="btn sm back" data-act="back">Volver a la lista<\/button>
     <div class="det-head">
@@ -1301,9 +1345,9 @@ VIEWS.summary = function renderSummary() {
     const list = items.filter(i => i.el.cat === c); if (!list.length) return '';
     return `<h2>${CAT[c].title}<\/h2>` + list.map(({ el, en }) => { const mi = mapIds(en); return `<h3>${esc(el.name)} <span class="n">${status(el).t}<\/span><\/h3>
       ${en.map && en.map.length ? `<ul>${en.map.map(x => `<li><b>${esc(x.s)}:<\/b> ${esc(x.t)}<\/li>`).join('')}<\/ul>` : ''}
-      ${en.ex.filter(id => !mi.has(id)).length ? `<ul>${en.ex.filter(id => !mi.has(id)).map(id => `<li>${esc(EX[id].gm)} <span class="n">${esc(TOPIC[EX[id].topic].name)}, ${EX[id].comp.join(' ')}<\/span><\/li>`).join('')}<\/ul>` : ''}
+      ${en.ex.filter(id => !mi.has(id) || jetAssignment(en,id)).length ? `<ul>${en.ex.filter(id => !mi.has(id) || jetAssignment(en,id)).map(id => `<li>${esc(EX[id].gm)} ${jetAssignment(en,id)?`<span class="tag">${esc(jetAssignment(en,id))}</span>`:""} <span class="n">${esc(TOPIC[EX[id].topic].name)}, ${EX[id].comp.join(' ')}<\/span><\/li>`).join('')}<\/ul>` : ''}
       ${en.fcts.filter(id => !mi.has(id)).length ? `<ul>${en.fcts.filter(id => !mi.has(id)).map(id => `<li>${esc(FC[id].sys)}: ${esc(FC[id].mal)} <span class="n">FCTS<\/span><\/li>`).join('')}<\/ul>` : ''}
-      ${en.custom.length ? `<ul>${en.custom.map(c => `<li>${esc(c)} <span class="n">propio<\/span><\/li>`).join('')}<\/ul>` : ''}
+      ${en.custom.length ? `<ul>${en.custom.map(c => `<li>${esc(customLabel(c))} <span class="n">propio<\/span><\/li>`).join('')}<\/ul>` : ''}
       ${en.note ? `<p class="n">Nota: ${esc(en.note)}<\/p>` : ''}
       ${!countSel(en) && !en.note ? '<p class="n">Incluido sin ejercicios definidos.<\/p>' : ''}`; }).join('');
   }).join('');
@@ -1321,9 +1365,9 @@ function summaryText() {
     lines.push(`[${el.cat}] ${el.name} — ${status(el).t}`);
     const mi = mapIds(en);
     (en.map || []).forEach(x => lines.push(`  - [${x.s}] ${x.t}`));
-    en.ex.filter(id => !mi.has(id)).forEach(id => lines.push(`  - ${EX[id].gm} (${TOPIC[EX[id].topic].name}; ${EX[id].comp.join(' ')})`));
+    en.ex.filter(id => !mi.has(id) || jetAssignment(en,id)).forEach(id => lines.push(`  - ${EX[id].gm} (${TOPIC[EX[id].topic].name}; ${EX[id].comp.join(' ')}; ${jetAssignment(en,id)})`));
     en.fcts.forEach(id => lines.push(`  - FCTS ${FC[id].sys}: ${FC[id].mal}`));
-    en.custom.forEach(c => lines.push(`  - ${c} (propio)`));
+    en.custom.forEach(c => lines.push(`  - ${customLabel(c)} (propio)`));
     if (en.note) lines.push(`  Nota: ${en.note}`);
     lines.push('');
   });
@@ -1331,16 +1375,16 @@ function summaryText() {
 }
 function summaryCsv() {
   const q = s => '"' + String(s ?? '').replace(/"/g, '""') + '"';
-  const rows = [['Flota', 'Modulo', 'Categoria', 'Training element', 'Fuente', 'Topic', 'Ejercicio', 'Competencias', 'Fases', 'Nota']];
+  const rows = [['Flota', 'Modulo', 'Categoria', 'Training element', 'Fuente', 'Topic', 'Ejercicio', 'Competencias', 'Fases', 'Nota', 'Sesiones', 'Tripulante']];
   summaryData().forEach(({ el, en }) => {
     const base = [S.fleet, 'M' + S.module, el.cat, el.name];
     (en.map || []).forEach(x => rows.push([...base, 'Guía IG', x.s, x.t, (x.c || []).join(' '), '', en.note]));
-    en.ex.forEach(id => rows.push([...base, 'JET MATRIX', TOPIC[EX[id].topic].name, EX[id].gm, EX[id].comp.join(' '), EX[id].phases.join(' '), en.note]));
+    en.ex.forEach(id => rows.push([...base, 'JET MATRIX', TOPIC[EX[id].topic].name, EX[id].gm, EX[id].comp.join(' '), EX[id].phases.join(' '), en.note, evArr(en,id).join(' + '), en.crew?.[id]||'']));
     en.fcts.forEach(id => rows.push([...base, 'FCTS', FC[id].sys, FC[id].mal, '', '', en.note]));
-    en.custom.forEach(c => rows.push([...base, 'Propio', '', c, '', '', en.note]));
+    en.custom.forEach(c => {const x=customRecord(c);rows.push([...base, 'Propio', '', x.text, x.comp.join(' '), '', en.note,x.sessions.join(' + '),x.crew]);});
     if (!countSel(en)) rows.push([...base, '', '', '', '', '', en.note]);
   });
-  return '\uFEFF' + rows.map(r => r.map(q).join(';')).join('\r\n');
+  return '\uFEFF' + rows.map(r => {while(r.length<12)r.push('');return r.map(q).join(';');}).join('\r\n');
 }
 async function download(kind) {
   const name = `EBT_${S.fleet}_M${S.module}.${kind}`; const data = kind === 'csv' ? summaryCsv() : summaryText();
@@ -2004,7 +2048,7 @@ function fdaApply(evId) {
   const ev = fdaData().events.find(e => e.id === evId); if (!ev) return 0;
   const m = S.module, fl = S.fleet; let n = 0;
   const els = ev.elements.filter(id => EL[id] && EL[id].fleets.includes(fl));
-  els.forEach((id, i) => { const en = entry(id, m, fl, true); if (i === 0 && ev.custom && !en.custom.includes(ev.custom + ' (boletín FDA)')) { en.custom.push(ev.custom + ' (boletín FDA)'); n++; } if (!en.note) en.note = 'Foco del boletín Safety FDA: ' + ev.name + '.'; });
+  els.forEach((id, i) => { const en = entry(id, m, fl, true); if (i === 0 && ev.custom && !en.custom.some(c=>customRecord(c).text===ev.custom+' (boletín FDA)')) { en.custom.push(ev.custom + ' (boletín FDA)'); n++; } if (!en.note) en.note = 'Foco del boletín Safety FDA: ' + ev.name + '.'; });
   ev.ex.filter(x => EX[x]).forEach(x => {
     // El ejercicio se marca en el elemento que lo contiene: primero los del foco, si no, el que lo tenga en la matriz.
     const owner = els.find(id => EL[id].topics.includes(EX[x].topic)) || elementsForFleet(fl).find(e => e.topics.includes(EX[x].topic));
@@ -2644,7 +2688,7 @@ async function buildModulePdf(f = S.fleet, m = S.module) {
   const rows = [];
   ['A', 'B', 'C', 'O'].forEach(c => els.filter(e => e.cat === c).forEach(e => {
     const en = fd[e.id]; const st = status(e, m, f); const mi = mapIds(en);
-    const exs = en ? [...(en.map || []).map(x => '[' + x.s + '] ' + x.t), ...en.ex.filter(id => !mi.has(id)).map(id => EX[id].gm), ...en.fcts.filter(id => !mi.has(id)).map(id => 'FCTS ' + FC[id].sys + ': ' + FC[id].mal), ...en.custom] : [];
+    const exs = en ? [...(en.map || []).map(x => '[' + x.s + '] ' + x.t), ...en.ex.filter(id => !mi.has(id) || jetAssignment(en,id)).map(id => EX[id].gm + (jetAssignment(en,id)?' · '+jetAssignment(en,id):'')), ...en.fcts.filter(id => !mi.has(id)).map(id => 'FCTS ' + FC[id].sys + ': ' + FC[id].mal), ...en.custom.map(customLabel)] : [];
     rows.push([c, e.name, en ? 'Incluido' : (isDue(st) ? 'Pendiente' : ''), st.t, exs.map(x => '• ' + x).join('\n') + (en && en.note ? (exs.length ? '\n' : '') + 'Nota: ' + en.note : '') + (en && en.src === 'matriz' && !exs.length ? (m === 1 ? 'Registro tomado de la matriz EBT All Modules' : 'Marcado en la matriz EBT All Modules') : '')]);
   }));
   doc.table([{ t: 'Cat.', w: 6 }, { t: 'Training element', w: 26, bold: true }, { t: 'M' + m, w: 11 }, { t: 'Estado en el ciclo', w: 24 }, { t: 'Ejercicios y notas', w: 60 }], rows, { fillRow: r => r[2] === 'Incluido' ? [225, 243, 232] : (r[2] === 'Pendiente' ? [251, 231, 228] : null) });
@@ -2734,7 +2778,7 @@ function storeSignature(key, sig) {
   if (key.startsWith('L:')) { LEGACY[key.slice(2)] = sig; saveLegacy(); render(); toast('Firma precargada guardada'); return; }
   saveMySignature(sig).then(ok => { if (ok) { render(); toast('Firma guardada'); } });
 }
-const WRITE_ACTS = new Set(['valSet', 'icapSave', 'icapDel', 'fdaApply', 'fdaSave', 'inc', 'cell', 'addCustom', 'rmCustom', 'editCustom', 'saveCustom', 'restore', 'clearFleet', 'reseedM1', 'tgt', 'applySugg', 'confirmSugg', 'discardSugg', 'cm', 'mem', 'ata', 'pf', 'addCompany', 'rmCompany', 'editCompany', 'saveCompany', 'addSysItem', 'rmSysItem', 'editSysItem', 'saveSysItem', 'addMalf', 'rmMalf', 'gradingSave', 'kpiSave', 'aoc', 'linkAsk', 'addEl', 'rmEl', 'evtog', 'evclear', 'p2']);
+const WRITE_ACTS = new Set(['valSet', 'icapSave', 'icapDel', 'fdaApply', 'fdaSave', 'inc', 'cell', 'addCustom', 'rmCustom', 'editCustom', 'saveCustom', 'restore', 'clearFleet', 'reseedM1', 'tgt', 'applySugg', 'confirmSugg', 'discardSugg', 'cm', 'mem', 'ata', 'pf', 'addCompany', 'rmCompany', 'editCompany', 'saveCompany', 'addSysItem', 'rmSysItem', 'editSysItem', 'saveSysItem', 'addMalf', 'rmMalf', 'gradingSave', 'kpiSave', 'aoc', 'linkAsk', 'addEl', 'rmEl', 'evtog', 'evclear', 'evcrew', 'customComp', 'customCrew', 'customSession', 'customSave', 'p2']);
 const WRITE_CHANGES = new Set(['ex', 'fc', 'malfPick', 'link', 'pfNote', 'note']);
 function denyWrite() { toast('Modo lectura: pide al manager permiso de Editor en "Compartir"'); }
 function afterPick(id, checked) {
@@ -2778,6 +2822,7 @@ app.addEventListener('click', ev => {
   else if (act === 'evopen') { EVPICK = { el: b.dataset.el || S.sel, id: v }; render(); }
   else if (act === 'evdone') { EVPICK = null; render(); }
   else if (act === 'noop') { /* clic dentro del cuadro */ }
+  else if (act === 'evcrew') { if(!EVPICK)return;const en=entry(EVPICK.el,S.module,S.fleet,true);en.crew ||= {};if(v)en.crew[EVPICK.id]=v;else delete en.crew[EVPICK.id];save();render(); }
   else if (act === 'evtog') { if (!EVPICK) return; const en = entry(EVPICK.el, S.module, S.fleet, true); en.ev ||= {}; let a = en.ev[EVPICK.id]; if (!Array.isArray(a)) a = en.ev[EVPICK.id] = a ? [a] : []; const i = a.indexOf(v); if (i > -1) a.splice(i, 1); else a.push(v); if (!a.length) delete en.ev[EVPICK.id]; save(); render(); }
   else if (act === 'evclear') { if (!EVPICK) return; const en = entry(EVPICK.el, S.module, S.fleet); if (en && en.ev) { delete en.ev[EVPICK.id]; save(); } EVPICK = null; render(); }
   else if (act === 'yearBox') { S.module = +v; save(); render(); toast('Año ' + yearOf(+v) + ': M' + v + ' y M' + (+v + 1)); }
@@ -2791,7 +2836,8 @@ app.addEventListener('click', ev => {
   else if (act === 'mode') { S.filters.mode = v; save(); render(); }
   else if (act === 'clearFilters') { S.filters = { ...S.filters, comp: [], phase: '', ph: '', q: '' }; save(); render(); }
   else if (act === 'useTargets') { S.filters.comp = targetsOf(); S.filters.mode = 'any'; if (!PLAN_VIEWS.includes(S.view)) S.view = 'comp'; save(); render(true); toast('Filtro: ' + (S.filters.comp.join(', ') || 'sin competencias target')); }
-  else if (act === 'addCustom') { const inp = document.getElementById('customIn'); const t = inp.value.trim(); if (!t) { inp.focus(); return; } entry(S.sel, S.module, S.fleet, true).custom.push(t); save(); render(); }
+  else if (act === 'addCustom') { openCustom(); }
+  else if (['customComp','customCrew','customSession','customCancel','customSave'].includes(act)) { handleCustomAction(act,v); }
   else if (act === 'rmCustom') { const en = entry(S.sel); if (en) { en.custom.splice(+v, 1); save(); render(); } }
   else if (act === 'copySummary') { navigator.clipboard.writeText(summaryText()).then(() => toast('Resumen copiado')).catch(() => toast('No se pudo copiar')); }
   else if (act === 'dlSummary') { download(v); }
@@ -2849,8 +2895,8 @@ app.addEventListener('click', ev => {
   else if (act === 'saveCompany') { const t = (document.getElementById('edT') || {}).value || '', d = (document.getElementById('edD') || {}).value || ''; if (!t.trim()) { toast('El tema no puede quedar vacío'); return; } S.company[S.fleet][S.module][+b.dataset.i] = { t: t.trim(), d: d.trim() }; EDIT_ITEM = null; save(); render(); toast('Tema actualizado'); }
   else if (act === 'editSysItem') { EDIT_ITEM = { kind: 'sys', i: +b.dataset.i }; render(); const f = document.getElementById('edItem'); if (f) f.focus(); }
   else if (act === 'saveSysItem') { const [ata, sys] = ((document.getElementById('edAta') || {}).value || '|').split('|'); const item = ((document.getElementById('edItem') || {}).value || '').trim(), fmt = ((document.getElementById('edFmt') || {}).value || '').trim(); S.sysitems[S.fleet][S.module][+b.dataset.i] = { ata, sys, item, fmt }; const st = S.systop[S.fleet]; const ao = D.ata.find(x => x.ata === ata && x.name === sys); if (ao) { st[ao.id] ||= []; if (!st[ao.id].includes(S.module)) st[ao.id].push(S.module); } EDIT_ITEM = null; save(); render(); toast('Ítem actualizado'); }
-  else if (act === 'editCustom') { EDIT_ITEM = { kind: 'custom', i: +v }; render(); const f = document.getElementById('edCustom'); if (f) f.focus(); }
-  else if (act === 'saveCustom') { const t = ((document.getElementById('edCustom') || {}).value || '').trim(); if (!t) { toast('El ejercicio no puede quedar vacío'); return; } const en = entry(S.sel); if (en) en.custom[+v] = t; EDIT_ITEM = null; save(); render(); toast('Ejercicio actualizado'); }
+  else if (act === 'editCustom') { openCustom(+v); }
+
   else if (act === 'cancelEdit') { EDIT_ITEM = null; render(); }
   else if (act === 'rmCompany') { S.company[S.fleet][S.module].splice(+b.dataset.i, 1); save(); render(); }
   else if (act === 'addSysItem') { const [ata, sys] = document.getElementById('siAta').value.split('|'); const item = document.getElementById('siItem').value.trim(), fmt = document.getElementById('siFmt').value.trim(); const si = S.sysitems[S.fleet] ||= {}; si[S.module] ||= []; si[S.module].push({ ata, sys, item, fmt }); const st = S.systop[S.fleet]; const a = D.ata.find(x => x.ata === ata && x.name === sys); if (a) { st[a.id] ||= []; if (!st[a.id].includes(S.module)) st[a.id].push(S.module); } save(); render(); }
@@ -2902,6 +2948,7 @@ app.addEventListener('change', ev => {
 let qTimer = null;
 app.addEventListener('input', ev => {
   const t = ev.target; if (!t.dataset.act) return;
+  if(t.dataset.act==='customText'&&CUSTOM_DRAFT){CUSTOM_DRAFT.text=t.value;return;}
   if (t.dataset.act === 'gq') { clearTimeout(qTimer); SEARCH_Q = t.value; qTimer = setTimeout(() => { const pos = t.selectionStart; render(); const n = app.querySelector('#gq'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { } } }, 200); return; }
   if (t.dataset.act === 'teamQ') { clearTimeout(qTimer); TEAM_Q = t.value; qTimer = setTimeout(async () => { try { TEAM_HITS = store.user ? await store.user.search(TEAM_Q) : []; } catch (e) { TEAM_HITS = []; } const pos = t.selectionStart; render(); const n = app.querySelector('#teamQ'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { } } }, 350); return; }
   if (t.dataset.act === 'note') {
